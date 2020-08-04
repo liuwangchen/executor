@@ -1,4 +1,4 @@
-package routine
+package executor
 
 import (
 	"context"
@@ -17,18 +17,18 @@ import (
 	"github.com/gorhill/cronexpr"
 )
 
-//GuaranteeExecutor struct, make sure of none error return
-type GuaranteeExecutor struct {
+//RecoverExecutor struct, make sure of none error return
+type RecoverExecutor struct {
 	exec Executor
 }
 
-//Guarantee insure exec NEVER PANIC
-func Guarantee(exec Executor) *GuaranteeExecutor {
-	return &GuaranteeExecutor{exec}
+//Recover insure exec NEVER PANIC
+func Recover(exec Executor) *RecoverExecutor {
+	return &RecoverExecutor{exec}
 }
 
 //Execute implement Executor interface
-func (g *GuaranteeExecutor) Execute(ctx context.Context) error {
+func (g *RecoverExecutor) Execute(ctx context.Context) error {
 	do := func(ctx context.Context) (err error) {
 		defer func() {
 			if rc := recover(); rc != nil {
@@ -196,6 +196,7 @@ func (c *CrontabExecutor) Everyday(flag bool) {
 		c.workday = false
 	}
 }
+
 func (c *CrontabExecutor) Mute(begin time.Time, end time.Time) {
 	m := &CrontabMute{begin: begin, end: end}
 	c.mutes = append(c.mutes, m)

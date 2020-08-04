@@ -1,4 +1,4 @@
-package routine
+package executor
 
 import (
 	"context"
@@ -27,14 +27,14 @@ func ArgumentsFrom(ctx context.Context) ([]interface{}, bool) {
 
 type _parent_routine struct{}
 
-func WithParent(ctx context.Context, parent *Routine) context.Context {
+func WithParent(ctx context.Context, parent *Exec) context.Context {
 	return context.WithValue(ctx, _parent_routine{}, parent)
 }
 
-func ParentFrom(ctx context.Context) (*Routine, bool) {
+func ParentFrom(ctx context.Context) (*Exec, bool) {
 	parent := ctx.Value(_parent_routine{})
 	if parent != nil {
-		return parent.(*Routine), true
+		return parent.(*Exec), true
 	}
 	return nil, false
 }
