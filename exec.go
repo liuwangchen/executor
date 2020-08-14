@@ -17,25 +17,25 @@ type options struct {
 
 type Opt func(*options)
 
-func Arguments(args ...interface{}) Opt {
+func WithArguments(args ...interface{}) Opt {
 	return func(opts *options) {
 		opts.args = args
 	}
 }
 
-func Signal(sig os.Signal, exec Executor) Opt {
+func WithSignal(sig os.Signal, exec Executor) Opt {
 	return func(opts *options) {
 		opts.signals[sig] = exec
 	}
 }
 
-func Before(exec Executor) Opt {
+func WithBefore(exec Executor) Opt {
 	return func(opts *options) {
 		opts.before = exec
 	}
 }
 
-func After(exec Executor) Opt {
+func WithAfter(exec Executor) Opt {
 	return func(opts *options) {
 		opts.after = exec
 	}
@@ -96,7 +96,10 @@ func (r *Exec) Execute(ctx context.Context) error {
 	for {
 		select {
 		case err := <-ch:
-			return err
+			if err != nil {
+				return err
+			}
+			return nil
 		case sig := <-sigChan:
 			executor, ok := r.opts.signals[sig]
 			if !ok {

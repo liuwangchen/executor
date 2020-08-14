@@ -20,7 +20,6 @@ func before(ctx context.Context) error {
 func after(ctx context.Context) error {
 	log.Println("after begin")
 	defer log.Println("after end")
-	time.Sleep(time.Millisecond * 50)
 	return nil
 }
 
@@ -42,11 +41,22 @@ func bar(ctx context.Context) error {
 
 func main() {
 	err := executor.Execute(
-		context.TODO(),
-		executor.Parallel(executor.ExecutorFunc(bar), executor.ExecutorFunc(foo), executor.ExecutorFunc(foo)),
-		executor.Before(executor.ExecutorFunc(before)),
-		executor.After(executor.ExecutorFunc(after)),
-		executor.Signal(syscall.SIGINT, executor.ExecutorFunc(func(ctx context.Context) error {
+		context.Background(),
+		executor.Timeout(time.Second*3, executor.ExecutorFunc(func(ctx context.Context) error {
+			for {
+				select {
+				case <-ctx.Done():
+					fmt.Println("time out")
+					return ctx.Err()
+				default:
+					fmt.Println("zhixing")
+					time.Sleep(time.Second * 1)
+				}
+			}
+		})),
+		executor.WithBefore(executor.ExecutorFunc(before)),
+		executor.WithAfter(executor.ExecutorFunc(after)),
+		executor.WithSignal(syscall.SIGINT, executor.ExecutorFunc(func(ctx context.Context) error {
 			return errors.New("haha")
 		})),
 	)
