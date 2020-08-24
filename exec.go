@@ -87,11 +87,11 @@ func (r *Exec) Execute(ctx context.Context) error {
 		ctx = WithArgments(ctx, r.opts.args...)
 	}
 
-	// do
-	ch := r.do(ctx, r.exec)
-
 	// signal
 	sigChan := r.sig()
+
+	// do
+	ch := r.do(ctx, r.exec)
 
 	for {
 		select {

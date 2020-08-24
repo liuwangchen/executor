@@ -457,3 +457,11 @@ func Profiling(addr string) *ProfilingExecutor {
 func (d *ProfilingExecutor) Execute(ctx context.Context) error {
 	return http.ListenAndServe(d.address, nil)
 }
+
+//ExecutorFunc definition
+type ExecutorFunc func(context.Context) error
+
+//Execute ExecutorFunc implemention of Executor
+func (f ExecutorFunc) Execute(ctx context.Context) error {
+	return f(ctx)
+}

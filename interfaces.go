@@ -15,13 +15,6 @@ type Executor interface {
 	Execute(context.Context) error
 }
 
-//ExecutorFunc definition
-type ExecutorFunc func(context.Context) error
-
-//Execute ExecutorFunc implemention of Executor
-func (f ExecutorFunc) Execute(ctx context.Context) error {
-	return f(ctx)
-}
 
 // ExecutorMiddleware is a function that middlewares can implement to be
 // able to chain.

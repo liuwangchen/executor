@@ -2,9 +2,8 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log"
+	"os"
 	"syscall"
 	"time"
 
@@ -12,57 +11,62 @@ import (
 )
 
 func before(ctx context.Context) error {
-	log.Println("before begin")
-	defer log.Println("before end")
+	fmt.Println("before begin")
+	defer fmt.Println("before end")
 	return nil
 }
 
 func after(ctx context.Context) error {
-	log.Println("after begin")
-	defer log.Println("after end")
+	fmt.Println("after begin")
+	defer fmt.Println("after end")
 	return nil
 }
 
 func foo(ctx context.Context) error {
-	log.Println("foo begin")
-	defer log.Println("foo end")
+	fmt.Println("foo begin")
+	defer fmt.Println("foo end")
 	time.Sleep(time.Second * 2)
 	return nil
 }
 
 func bar(ctx context.Context) error {
-	log.Println("bar begin")
-	defer log.Println("bar end")
+	fmt.Println("bar begin")
+	defer fmt.Println("bar end")
 	for i := 0; i < 10; i++ {
-		log.Println(i)
+		fmt.Println(i)
 	}
+	return nil
+}
+
+func do(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			fmt.Println("zhixing")
+			time.Sleep(time.Millisecond * 500)
+		}
+	}
+}
+
+func handleSig(ctx context.Context) error {
+	fmt.Println("handle sig")
+	os.Exit(1)
 	return nil
 }
 
 func main() {
 	err := executor.Execute(
 		context.Background(),
-		executor.Timeout(time.Second*3, executor.ExecutorFunc(func(ctx context.Context) error {
-			for {
-				select {
-				case <-ctx.Done():
-					fmt.Println("time out")
-					return ctx.Err()
-				default:
-					fmt.Println("zhixing")
-					time.Sleep(time.Second * 1)
-				}
-			}
-		})),
+		executor.Timeout(time.Second*10, executor.ExecutorFunc(do)),
 		executor.WithBefore(executor.ExecutorFunc(before)),
 		executor.WithAfter(executor.ExecutorFunc(after)),
-		executor.WithSignal(syscall.SIGINT, executor.ExecutorFunc(func(ctx context.Context) error {
-			return errors.New("haha")
-		})),
+		executor.WithSignal(syscall.SIGINT, executor.ExecutorFunc(handleSig)),
 	)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(123)
+	fmt.Println("done")
 }
