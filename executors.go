@@ -455,7 +455,27 @@ func Profiling(addr string) *ProfilingExecutor {
 }
 
 func (d *ProfilingExecutor) Execute(ctx context.Context) error {
-	return http.ListenAndServe(d.address, nil)
+	if len(d.address) == 0 {
+		return errors.New("no pprof address")
+	}
+	server := &http.Server{
+		Addr:    d.address,
+		Handler: http.DefaultServeMux,
+	}
+	go func() {
+		server.ListenAndServe()
+	}()
+	for {
+		select {
+		case <-ctx.Done():
+			profileCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			return server.Shutdown(profileCtx)
+		default:
+			fmt.Println("profile time")
+			time.Sleep(time.Second)
+		}
+	}
 }
 
 //ExecutorFunc definition

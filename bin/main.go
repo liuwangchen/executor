@@ -62,7 +62,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	err := executor.Execute(
 		ctx,
-		executor.Timeout(time.Second*10, executor.ExecutorFunc(do)),
+		executor.Profiling(":8080"),
 		executor.WithBefore(executor.ExecutorFunc(before)),
 		executor.WithAfter(executor.ExecutorFunc(after)),
 		executor.WithSignal(executor.Func(func(c context.Context) error {
