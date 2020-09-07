@@ -23,9 +23,11 @@ func WithArguments(args ...interface{}) Opt {
 	}
 }
 
-func WithSignal(sig os.Signal, exec Executor) Opt {
+func WithSignal(exec Executor, sigs ...os.Signal) Opt {
 	return func(opts *options) {
-		opts.signals[sig] = exec
+		for _, sig := range sigs {
+			opts.signals[sig] = exec
+		}
 	}
 }
 

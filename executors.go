@@ -465,3 +465,7 @@ type ExecutorFunc func(context.Context) error
 func (f ExecutorFunc) Execute(ctx context.Context) error {
 	return f(ctx)
 }
+
+func Func(fn func(context.Context) error) ExecutorFunc {
+	return ExecutorFunc(fn)
+}

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"syscall"
 	"time"
 
@@ -52,17 +51,24 @@ func do(ctx context.Context) error {
 
 func handleSig(ctx context.Context) error {
 	fmt.Println("handle sig")
-	os.Exit(1)
 	return nil
 }
 
+func haha(fn func(int) int) {
+	fmt.Println(fn)
+}
+
 func main() {
+	ctx, cancel := context.WithCancel(context.Background())
 	err := executor.Execute(
-		context.Background(),
+		ctx,
 		executor.Timeout(time.Second*10, executor.ExecutorFunc(do)),
 		executor.WithBefore(executor.ExecutorFunc(before)),
 		executor.WithAfter(executor.ExecutorFunc(after)),
-		executor.WithSignal(syscall.SIGINT, executor.ExecutorFunc(handleSig)),
+		executor.WithSignal(executor.Func(func(c context.Context) error {
+			cancel()
+			return nil
+		}), syscall.SIGTERM, syscall.SIGINT),
 	)
 	if err != nil {
 		fmt.Println(err)
