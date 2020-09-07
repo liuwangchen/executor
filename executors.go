@@ -469,8 +469,9 @@ func (d *ProfilingExecutor) Execute(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			profileCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			return server.Shutdown(profileCtx)
+			err := server.Shutdown(profileCtx)
+			cancel()
+			return err
 		default:
 			fmt.Println("profile time")
 			time.Sleep(time.Second)
