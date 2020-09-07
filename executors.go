@@ -473,7 +473,6 @@ func (d *ProfilingExecutor) Execute(ctx context.Context) error {
 			cancel()
 			return err
 		default:
-			fmt.Println("profile time")
 			time.Sleep(time.Second)
 		}
 	}
