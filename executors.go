@@ -37,7 +37,7 @@ func (g *RecoverExecutor) Execute(ctx context.Context) error {
 					err = rv.(error)
 					return
 				default:
-					err = errors.New(fmt.Sprintf("%v", rv))
+					err = fmt.Errorf("%v", rv)
 					return
 				}
 			}
@@ -46,7 +46,7 @@ func (g *RecoverExecutor) Execute(ctx context.Context) error {
 		return
 	}
 	if err := do(ctx); err != nil {
-		log.Println("execute failed:", err)
+		return err
 	}
 	return nil
 }
@@ -235,8 +235,8 @@ func (c *CrontabExecutor) Execute(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-time.After(next.Sub(time.Now())):
-			if c.IsTimeMuted(next) == false {
+		case <-time.After(time.Until(next)):
+			if !c.IsTimeMuted(next) {
 				if err := c.exec.Execute(context.WithValue(ctx, _crontab{}, next)); err != nil {
 					return err
 				}
@@ -445,6 +445,30 @@ func (ae *AppendExecutor) Execute(ctx context.Context) error {
 	return nil
 }
 
+//DeferExecutor
+type DeferExecutor struct {
+	execs []Executor
+}
+
+//defer执行各个executor
+func Defer(execs ...Executor) *DeferExecutor {
+	executor := &DeferExecutor{
+		execs: []Executor{},
+	}
+	executor.execs = append(executor.execs, execs...)
+	return executor
+}
+
+func (df *DeferExecutor) Execute(ctx context.Context) (err error) {
+	// 如果为err了，这个err是最后defer的err
+	for _, executor := range df.execs {
+		defer func(e Executor) {
+			err = e.Execute(ctx)
+		}(executor)
+	}
+	return nil
+}
+
 //Profiling
 type ProfilingExecutor struct {
 	address string
@@ -458,12 +482,16 @@ func (d *ProfilingExecutor) Execute(ctx context.Context) error {
 	if len(d.address) == 0 {
 		return errors.New("no pprof address")
 	}
+	errChan := make(chan error)
 	server := &http.Server{
 		Addr:    d.address,
 		Handler: http.DefaultServeMux,
 	}
 	go func() {
-		server.ListenAndServe()
+		err := server.ListenAndServe()
+		if err != nil {
+			errChan <- err
+		}
 	}()
 	for {
 		select {
@@ -471,6 +499,8 @@ func (d *ProfilingExecutor) Execute(ctx context.Context) error {
 			profileCtx, cancel := context.WithTimeout(context.Background(), time.Second)
 			err := server.Shutdown(profileCtx)
 			cancel()
+			return err
+		case err := <-errChan:
 			return err
 		default:
 			time.Sleep(time.Second)

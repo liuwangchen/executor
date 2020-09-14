@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"syscall"
 	"time"
@@ -62,9 +63,21 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	err := executor.Execute(
 		ctx,
-		executor.Profiling(":8080"),
+		executor.Recover(executor.Func(func(i context.Context) error {
+			panic(errors.New("fdsfds"))
+			return nil
+		})),
 		executor.WithBefore(executor.ExecutorFunc(before)),
-		executor.WithAfter(executor.ExecutorFunc(after)),
+		executor.WithAfter(executor.Defer(
+			executor.Func(func(i context.Context) error {
+				fmt.Println(1)
+				return nil
+			}),
+			executor.Func(func(i context.Context) error {
+				fmt.Println(2)
+				return nil
+			}),
+		)),
 		executor.WithSignal(executor.Func(func(c context.Context) error {
 			cancel()
 			return nil
