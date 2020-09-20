@@ -15,6 +15,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/gorhill/cronexpr"
+	"github.com/panjf2000/ants/v2"
 )
 
 //RecoverExecutor struct, make sure of none error return
@@ -413,6 +414,39 @@ func (pe *ParallelExecutor) Execute(ctx context.Context) error {
 				log.Println("parallel ", i, " failed:", err)
 			}
 		}(i, executor)
+	}
+	pe.wg.Wait()
+	return nil
+}
+
+//ParallelInPoolExecutor
+type ParallelInPoolExecutor struct {
+	execs []Executor
+	size  int
+	wg    sync.WaitGroup
+}
+
+//ParallelInPoolExecutor new
+func ParallelInPool(size int, execs ...Executor) *ParallelInPoolExecutor {
+	return &ParallelInPoolExecutor{
+		execs: execs,
+		size:  size,
+	}
+}
+
+//Execute implement Executor
+func (pe *ParallelInPoolExecutor) Execute(ctx context.Context) error {
+	p, _ := ants.NewPoolWithFunc(pe.size, func(arg interface{}) {
+		_ = arg.(Executor).Execute(ctx)
+		pe.wg.Done()
+	})
+	defer p.Release()
+	for _, executor := range pe.execs {
+		pe.wg.Add(1)
+		err := p.Invoke(executor)
+		if err != nil {
+			return err
+		}
 	}
 	pe.wg.Wait()
 	return nil

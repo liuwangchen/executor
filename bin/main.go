@@ -2,9 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"syscall"
 	"time"
 
 	"github.com/liuwangchen/executor"
@@ -63,26 +61,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	err := executor.Execute(
 		ctx,
-		executor.Recover(executor.Func(func(i context.Context) error {
-			panic(errors.New("fdsfds"))
-			return nil
-		})),
-		executor.WithBefore(executor.ExecutorFunc(before)),
-		executor.WithAfter(executor.Defer(
-			executor.Func(func(i context.Context) error {
-				fmt.Println(1)
-				return nil
-			}),
-			executor.Func(func(i context.Context) error {
-				fmt.Println(2)
-				return nil
-			}),
-		)),
-		executor.WithSignal(executor.Func(func(c context.Context) error {
-			cancel()
-			return nil
-		}), syscall.SIGTERM, syscall.SIGINT),
+		executor.ParallelInPool(3, executor.Func(foo), executor.Func(foo), executor.Func(foo), executor.Func(foo)),
 	)
+	defer cancel()
 	if err != nil {
 		fmt.Println(err)
 		return
