@@ -419,27 +419,33 @@ func (pe *ParallelExecutor) Execute(ctx context.Context) error {
 	return nil
 }
 
-//ParallelInPoolExecutor
-type ParallelInPoolExecutor struct {
+//AntsExecutor
+type AntsExecutor struct {
 	execs []Executor
 	size  int
 	wg    sync.WaitGroup
 }
 
-//ParallelInPoolExecutor new
-func ParallelInPool(size int, execs ...Executor) *ParallelInPoolExecutor {
-	return &ParallelInPoolExecutor{
+//AntsExecutor new
+func Ants(size int, execs ...Executor) *AntsExecutor {
+	return &AntsExecutor{
 		execs: execs,
 		size:  size,
 	}
 }
 
 //Execute implement Executor
-func (pe *ParallelInPoolExecutor) Execute(ctx context.Context) error {
-	p, _ := ants.NewPoolWithFunc(pe.size, func(arg interface{}) {
-		_ = arg.(Executor).Execute(ctx)
-		pe.wg.Done()
+func (pe *AntsExecutor) Execute(ctx context.Context) error {
+	p, err := ants.NewPoolWithFunc(pe.size, func(arg interface{}) {
+		defer pe.wg.Done()
+		err := arg.(Executor).Execute(ctx)
+		if err != nil {
+			log.Println("ants failed:", err)
+		}
 	})
+	if err != nil {
+		return err
+	}
 	defer p.Release()
 	for _, executor := range pe.execs {
 		pe.wg.Add(1)

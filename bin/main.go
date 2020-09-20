@@ -61,7 +61,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	err := executor.Execute(
 		ctx,
-		executor.ParallelInPool(3, executor.Func(foo), executor.Func(foo), executor.Func(foo), executor.Func(foo)),
+		executor.Ants(1, executor.Func(foo), executor.Func(foo), executor.Func(foo), executor.Func(foo)),
 	)
 	defer cancel()
 	if err != nil {
