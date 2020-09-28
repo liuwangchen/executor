@@ -553,6 +553,9 @@ type ExecutorFunc func(context.Context) error
 
 //Execute ExecutorFunc implemention of Executor
 func (f ExecutorFunc) Execute(ctx context.Context) error {
+	if f == nil {
+		return nil
+	}
 	return f(ctx)
 }
 
